@@ -1,0 +1,90 @@
+
+
+```{r load_libraries}
+
+library(tidyverse)
+
+library(lubridate)
+
+library(xts)
+
+```
+
+
+```{r set_params}
+
+theme_set(theme_bw())
+
+```
+
+
+```{r Import_process_data}
+
+df = read_csv(paste0(file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+                     "\\OneDrive - Bank Of Israel\\Data\\BIS\\",
+                     "WEBSTATS_CBPOL_D_DATAFLOW_csv_row.csv"),skip = 1)
+
+df = df %>% 
+  rename_all(.funs = ~str_remove(.,"^[A-Z]{2}:")) %>% 
+  rename_all(.funs = ~str_replace_all(.,"\\s","_")) %>% 
+  rename_all(tolower) %>% 
+  rename(date = reference_area)
+
+df = df %>% 
+  slice(-1) %>% 
+  pivot_longer(-date, names_to = "country",values_to = "rate") %>% 
+  filter(complete.cases(.)) %>% 
+  mutate(rate = as.numeric(rate))
+  
+
+avg_df = df %>% 
+  group_by(date = as.yearmon(date), country) %>% 
+  summarise(avg_rate = mean(rate, na.rm = TRUE),.groups = "drop")
+  
+
+```
+
+
+```{r plot_israel_rate}
+
+avg_df %>% 
+  filter(country == "israel") %>% 
+  ggplot(aes(x = date, y = avg_rate)) + 
+  geom_line() + 
+  labs(x = "", y = "", title = "Israel average policy rate") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+```{r plot_international_comparison}
+
+avg_df %>% 
+  filter(country %in% c("israel","united_states")) %>% 
+  ggplot(aes(x = date, y = avg_rate, color = country)) + 
+  geom_line() + 
+  scale_color_manual(values = c("israel" = "black",
+                                "united_states" = "lightblue")) + 
+  labs(x = "", y = "", title = "Israel vs USA average policy rate") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom", legend.title = element_blank())
+
+```
+
+
+```{r}
+
+avg_df %>% 
+  filter(date >= as.yearmon("Jan 2000")) %>% 
+  filter(country %in% c("israel","united_states",
+                        "united_kingdom","canada",
+                        "japan","switzerland")) %>% 
+    ggplot(aes(x = date, y = avg_rate, color = country)) + 
+  geom_line() + 
+  labs(x = "", y = "", title = "Average policy rates") + 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom", legend.title = element_blank())
+
+
+```
+

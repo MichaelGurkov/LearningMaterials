@@ -1,0 +1,18 @@
+
+```{r load_libraries}
+
+library(tidyverse)
+
+library(lubridate)
+
+library(xts)
+
+library(Quandl)
+
+```
+
+
+```{r}
+
+```
+

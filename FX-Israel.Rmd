@@ -1,0 +1,79 @@
+
+```{r load_libraries}
+
+library(lubridate)
+
+library(tidyverse)
+
+library(readxl)
+
+```
+
+
+```{r import_raw_data, eval=FALSE}
+
+
+fx_df = map_dfr(c("Yaz7781","Yaz8286","Yaz9296","Yaz9700",
+                  "YAZIG","yazig_0712","Yaz8791"),
+function(temp_name){
+temp = read_xls(paste0(
+"C:\\Users\\internet\\OneDrive - Bank Of",
+" Israel\\Data\\BoI\\FX\\",temp_name,".xls"))
+
+names_vec = paste(names(temp), temp[1,]) %>%
+tolower() %>%
+str_remove_all(pattern = "[()\\.]") %>%
+str_replace_all(pattern = " ", "_")
+
+
+temp_df = temp[-1,] %>%
+setNames(names_vec) %>%
+rename_at(vars(starts_with("date")), ~"date") %>%
+mutate(across(-date, as.numeric)) %>%
+mutate(date = ymd(date))
+return(temp_df)
+})
+
+fx_df = fx_df %>%
+pivot_longer(-date, names_to = "currency")
+
+temp = read_xlsx(paste0(
+  "C:\\Users\\internet\\OneDrive - Bank Of",
+  " Israel\\Data\\BoI\\FX\\","yazigmizt",".xlsx")) %>% 
+  rename_all(tolower) %>% 
+  rename_all(~str_replace_all(.," ","_")) %>% 
+  mutate(across(-date, as.numeric)) %>%
+  mutate(date = ymd(date))%>%
+  pivot_longer(-date, names_to = "currency")
+
+fx_df = fx_df %>% 
+  rbind(temp)
+
+```
+
+
+```{r import_data}
+
+fx_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\fx_df.rds")) %>% 
+  filter(complete.cases(.))
+
+
+```
+
+
+```{r plot_usd}
+
+fx_df %>% 
+  filter(currency == "us_dollar") %>% 
+  filter(year(date) > 1990) %>% 
+  ggplot(aes(x = date, y = value)) + 
+  geom_line() + 
+  theme_bw()
+
+
+
+
+```
+
