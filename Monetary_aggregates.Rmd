@@ -1,0 +1,24 @@
+
+
+```{r load_libraries}
+
+library(tidyverse)
+
+library(Quandl)
+
+Quandl.api_key("Vd7t2TFEjCvipyX7zPmh")
+
+
+
+```
+
+
+```{r import_data}
+
+broad_money = Quandl("OECD/MEI_FIN_MABM_OECD_Q", type = "raw")
+
+narrow_money = Quandl("OECD/KEI_MANMM101_OECD_ST_Q", type = "raw")
+
+
+```
+

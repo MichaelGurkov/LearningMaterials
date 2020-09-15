@@ -1,4 +1,12 @@
 
+```{r include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+```
+
+
+
 ```{r load_libraries}
 
 library(lubridate)
@@ -59,21 +67,37 @@ fx_df = read_rds(paste0(
   "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\fx_df.rds")) %>% 
   filter(complete.cases(.))
 
+fx_balance = read_csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\Balance\\FX_Balance.csv"),
+  col_names = c("date","fx_balance")) %>% 
+  mutate(date = dmy(date))
+
 
 ```
 
-
-```{r plot_usd}
+```{r plot_usd_rate}
 
 fx_df %>% 
   filter(currency == "us_dollar") %>% 
   filter(year(date) > 1990) %>% 
   ggplot(aes(x = date, y = value)) + 
   geom_line() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("USD-ILS exchange rate") + 
   theme_bw()
 
 
 
+
+```
+
+```{r plot_fx_reserves}
+
+fx_balance %>% 
+  ggplot(aes(x = date, y = fx_balance)) + 
+  geom_line() + 
+  scale_y_continuous(labels = scales::comma_format(scale = 1000 ^ (-1))) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("FX reserves (billions USD)")
 
 ```
 
