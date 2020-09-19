@@ -76,65 +76,72 @@ import_fx_rates = function(files_dir = NULL,
 #'   about the activity of three groups : domestic banks,
 #'    foreign financial institutions and other clients.
 
-import_fx_trade_volume = function(){}
+import_fx_trade_volume = function(dir_path = NULL){
+
+  if(is.null(dir_path)){
+
+    dir_path = paste0(
+      file.path(Sys.getenv("USERPROFILE")),
+      "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\TradeVolume\\")
+
+  }
+
+
+  old_format_data = map_dfr(1:8, function(temp_ind){
+
+    temp_df = import_fx_volume_workbook_old_format(
+      file_path = paste0(dir_path,"trdvol0",temp_ind,".xls"))
+
+
+  })
+
+
+
+
+
+
+
+
+
+}
 
 
 #' This is a helper (internal) function that imports volume data for
-#' each player category based on column position
+#' each player category based on old format
 #'
 #'
 
-import_fx_volume_workbook = function(file_path,start_row){
+import_fx_volume_workbook_old_format = function(file_path){
 
-  import_fx_volume_sheet_data = function(file_path, sheet_ind,
-                                         start_row){
+  import_fx_volume_sheet_data = function(file_path, sheet_ind){
 
-    dates_df = read_xls(
+    temp_df = suppressMessages(
+      read_xls(
       path = file_path,
       sheet = sheet_ind,
-      range = cell_limits(ul = c(start_row,1),lr = c(NA_integer_,1)),
-      col_names = "date") %>%
-      mutate(date = as_date(date)) %>%
-      mutate(date = update(date, year = 2001))
-
-    foreign_fin_inst_df = read_xls(
-      path = file_path,
-      sheet = sheet_ind,
-      range = cell_limits(ul = c(start_row,4),lr = c(NA_integer_,5)),
-      col_names = c("vol_net_swaps","vol_including_swaps")) %>%
-      mutate(category = "foreign_fin_inst")
-
-    other_clients_df = read_xls(
-      path = file_path,
-      sheet = sheet_ind,
-      range = cell_limits(ul = c(start_row,9),lr = c(NA_integer_,10)),
-      col_names = c("vol_net_swaps","vol_including_swaps")) %>%
-      mutate(category = "other_clients")
-
-    domestic_banks_df = read_xls(
-      path = file_path,
-      sheet = sheet_ind,
-      range = cell_limits(ul = c(start_row,17),lr = c(NA_integer_,18)),
-      col_names = c("vol_net_swaps","vol_including_swaps")) %>%
-      mutate(category = "domestic_banks")
+      range = cell_cols("A:U"))
+      )
 
 
-    df = map_dfr(list(foreign_fin_inst_df,
-                      domestic_banks_df,
-                      other_clients_df),
-                 function(temp_df){
+      data_df  = temp_df %>%
+      select(c(1,3,4,5,9,10,17,18)) %>%
+      set_names(
+        "date",
+        "min_col",
+        "foreign_inst-inc_swaps",
+        "foreign_inst-no_swaps",
+        "other_clients-inc_swaps",
+        "other_clients-no_swaps",
+        "domestic_banks-inc_swaps",
+        "domestic_banks-no_swaps") %>%
+      mutate(date = as.numeric(date)) %>%
+      filter(is.na(min_col) & !is.na(date)) %>%
+      select(-min_col) %>%
+      mutate(date = as.Date(date, origin = "1899-12-30")) %>%
+      pivot_longer(-date,names_to = "cat_type") %>%
+      separate(col = cat_type,into = c("category","type"), sep = "-")
 
-                   temp_df = temp_df %>%
-                     cbind(dates_df) %>%
-                     pivot_longer(
-                       c("vol_net_swaps","vol_including_swaps"),
-                       names_to = "volume_type")
-
-                   return(temp_df)
-
-
-                 })
-
+    return(data_df)
 
   }
 
@@ -142,9 +149,32 @@ import_fx_volume_workbook = function(file_path,start_row){
   volume_df = file_path %>%
     excel_sheets() %>%
     set_names() %>%
-    map_dfr(import_fx_volume_sheet_data,
-            start_row = start_row, file_path = file_path)
+    map_dfr(import_fx_volume_sheet_data, file_path = file_path)
 
   return(volume_df)
+
+}
+
+
+#' This is a helper (internal) function that imports volume data for
+#' each player category based on old format
+#'
+#'
+
+import_fx_volume_workbook_new_format = function(file_path){
+
+  daily_df = read_xls(path = file_path,
+                      sheet = "יומי",
+                      range = cell_cols("A:D"),
+                      col_names = c(
+                        "date",
+                        "conversion",
+                        "swap",
+                        "otc")) %>%
+    mutate(date = dmy(date)) %>%
+    filter(complete.cases(.)) %>%
+    mutate(across(-date, as.numeric))
+
+
 
 }
