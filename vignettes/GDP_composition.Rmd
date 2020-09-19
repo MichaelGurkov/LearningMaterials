@@ -1,0 +1,25 @@
+
+```{r load_libraries}
+
+library(tidyverse)
+
+library(lubridate)
+
+library(xts)
+
+library(rdbnomics)
+
+```
+
+
+```{r}
+
+"https://api.db.nomics.world/v22/series/OECD/QNA/ISR.B1_GS1.CQR.Q?observations=1"
+
+isr_gdp = rdb("OECD/QNA/ISR.B1_GS1.CQR.Q")
+
+gdp = rdb(provider_code = "OECD",
+          dataset_code = "QNA",ids = ".B1_GS1.CQR.Q")
+
+```
+

@@ -1,0 +1,53 @@
+
+
+
+```{r load_libraries}
+
+library(tidyverse)
+
+library(readxl)
+
+library(xts)
+
+```
+
+
+```{r set_params}
+
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+
+```
+
+
+
+```{r import_data}
+
+gdp = read_xlsx(paste0(
+  file.path(Sys.getenv("USERPROFILE")),
+  "\\OneDrive - Bank Of Israel\\Data\\CBS\\GDP_quarterly.xlsx"),
+  skip = 23,col_names = c("gdp_real","gdp_nominal","date"))
+
+gdp = gdp %>% 
+  mutate(date = as.yearqtr(date, format = "%Y-Q%q")) %>% 
+  select(date, gdp_nominal, gdp_real)
+
+
+
+```
+
+
+```{r plot_data}
+
+gdp %>% 
+  mutate(gdp_change = gdp_nominal / lag(gdp_nominal) - 1) %>% 
+  ggplot(aes(x = date, y = gdp_change, fill = (gdp_change > 0 ))) + 
+  xlab(NULL) + ylab(NULL) + 
+  ggtitle("Israel GDP (quarterly, percent change)") + 
+  geom_col() + 
+  scale_x_yearqtr(n = 15) + 
+  scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        legend.position = "none")
+
+```
+
