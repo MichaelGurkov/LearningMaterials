@@ -251,3 +251,41 @@ import_fx_volume_workbook_new_format = function(file_path){
   return(list(daily_df = daily_df, weekly_df = weekly_df))
 
 }
+
+
+#' This is a helper function that imports band data
+#'
+#' @import readxl
+#'
+import_band_data = function(dir_path = NULL){
+
+  if(is.null(dir_path)){
+
+    dir_path = paste0(
+      file.path(Sys.getenv("USERPROFILE")),
+      "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\Band\\")
+  }
+
+  band_df = map_dfr(c("band2000h",
+        "band2001h",
+        "band2003h",
+        "band2004h",
+        "band2005h",
+        "BAND8999"), function(temp_name){
+
+          temp_df = read_xls(
+            path = paste0(dir_path, temp_name,".xls"),
+            range = cell_cols("A:C"),
+            col_names = c("date","lower_bound","upper_bound")) %>%
+            mutate(date = as.numeric(date)) %>%
+            filter(complete.cases(.)) %>%
+            mutate(date = as.Date(date, origin = "1899-12-30"))
+
+        }) %>%
+    mutate(across(-date,as.numeric))
+
+  return(band_df)
+
+
+
+}

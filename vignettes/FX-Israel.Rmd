@@ -21,7 +21,7 @@ library(tidyverse)
 
 theme_set(theme_bw() + theme(
   legend.position = "bottom",
-  legend.key = element_blank()))
+  legend.title = element_blank()))
 
 ```
 
@@ -59,11 +59,19 @@ volume_data_list = import_fx_trade_volume()
 ```
 
 
+```{r import_band_data}
+
+band_df = import_band_data()
+
+```
+
+
 ```{r plot_usd_rate}
 
 fx_df %>% 
   filter(currency == "us_dollar") %>% 
   filter(year(date) > 1990) %>% 
+  filter(year(date) == 2008) %>% 
   ggplot(aes(x = date, y = value)) + 
   geom_line() + 
   xlab(NULL) + ylab(NULL) + ggtitle("USD-ILS exchange rate") + 
@@ -84,14 +92,42 @@ fx_balance %>%
 
 ```
 
-```{r plot_fx_trade_volume}
+```{r plot_fx_trade_volume_old}
 
-temp_df = volume_data_list$old_format_data
 
- %>% 
+volume_data_list$old_format_data %>% 
   filter(type == "inc_swaps") %>% 
-  ggplot(aes(x = date, y = value, color = category)) + 
+  ggplot(aes(x = date, y = value, fill = category)) + 
+  xlab(NULL) + ylab("Millions USD") + ggtitle("FX trading volume") + 
+  scale_y_continuous(labels = scales::comma_format()) + 
   geom_area()
+
+
+
+
+```
+
+```{r plot_fx_trade_volume_new}
+
+volume_data_list$daily_df %>% 
+  pivot_longer(-date) %>% 
+  filter(date > as.Date("2011-01-01")) %>% 
+  ggplot(aes(x = date, y = value, fill = name)) + 
+  xlab(NULL) + ylab("Millions USD") + ggtitle("FX trading volume") + 
+  scale_y_continuous(labels = scales::comma_format()) + 
+  geom_area()
+  
+
+```
+
+```{r plot_band_data}
+
+band_df %>% 
+  pivot_longer(-date) %>% 
+  ggplot(aes(x = date, y = value, color = name)) + 
+  geom_line() + 
+  xlab(NULL) + ylab(NULL) + ggtitle("FX band")
+  
 
 ```
 
