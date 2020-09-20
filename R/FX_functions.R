@@ -87,13 +87,41 @@ import_fx_trade_volume = function(dir_path = NULL){
   }
 
 
-  old_format_data = map_dfr(1:8, function(temp_ind){
+  old_format_data = map_dfr(paste0("0",c(1:8,"91")), function(temp_ind){
 
     temp_df = import_fx_volume_workbook_old_format(
-      file_path = paste0(dir_path,"trdvol0",temp_ind,".xls"))
+      file_path = paste0(dir_path,"trdvol",temp_ind,".xls")
+      )
 
 
   })
+
+  old_format_data = old_format_data %>%
+    mutate(value = as.numeric(value))
+
+
+  new_format_list = map(c("09",11:16), function(temp_ind){
+
+    temp_list = import_fx_volume_workbook_new_format(
+      file_path = paste0(dir_path,"trdvol",temp_ind,".xls")
+      )
+ })
+
+  daily_df = map_dfr(new_format_list, function(temp_list){
+
+    return(temp_list[["daily_df"]])
+
+  })
+
+  weekly_df = map_dfr(new_format_list, function(temp_list){
+
+    return(temp_list[["weekly_df"]])
+
+  })
+
+
+  return(list(old_format_data = old_format_data,
+              daily_df = daily_df, weekly_df = weekly_df))
 
 
 
@@ -163,8 +191,10 @@ import_fx_volume_workbook_old_format = function(file_path){
 
 import_fx_volume_workbook_new_format = function(file_path){
 
+  existing_sheets = excel_sheets(file_path)
+
   daily_df = read_xls(path = file_path,
-                      sheet = "יומי",
+                      sheet = existing_sheets[1],
                       range = cell_cols("A:D"),
                       col_names = c(
                         "date",
@@ -176,5 +206,48 @@ import_fx_volume_workbook_new_format = function(file_path){
     mutate(across(-date, as.numeric))
 
 
+  weekly_df = read_xls(path = file_path,
+                       sheet = existing_sheets[2],
+                       range = cell_cols("A:J"),
+                       col_names = c(
+                         "date",
+                         "foreign-conversion",
+                         "domestic-conversion",
+                         "total-conversion",
+                         "foreign-swap",
+                         "domestic-swap",
+                         "total-swap",
+                         "foreign-otc",
+                         "domestic-otc",
+                         "total-otc"
+                       )) %>%
+    mutate(date = dmy(date)) %>%
+    filter(complete.cases(.)) %>%
+    mutate(across(-date, as.numeric)) %>%
+    pivot_longer(-date, names_to = "cat_type") %>%
+    separate("cat_type",into = c("category","type"),sep = "-") %>%
+    filter(!category == "total")
+
+  # monthly_for_df = read_xls(path = file_path,
+  #                           sheet = "חודשי - תושבי חוץ",
+  #                           range = cell_cols("A:I"),
+  #                           col_names = c(
+  #                             "date",
+  #                             "foreign_inst-conversion",
+  #                             "foreign_inst-swap",
+  #                             "foreign_inst-otc",
+  #                             "foreign_inst-total",
+  #                             "other_foreigners-conversion",
+  #                             "other_foreigners-swap",
+  #                             "other_foreigners-otc",
+  #                             "other_foreigners-total"
+  #                           )) %>%
+  #   filter(complete.cases(.)) %>%
+  #   mutate(across(-date, as.numeric)) %>%
+  #   pivot_longer(-date, names_to = "cat_type") %>%
+  #   separate("cat_type",into = c("category","type"),sep = "-") %>%
+  #   filter(!category == "total")
+
+  return(list(daily_df = daily_df, weekly_df = weekly_df))
 
 }
