@@ -1,0 +1,11 @@
+﻿tase_name_heb,tase_name_eng
+התקופה,date
+מניות והמירים הנפקות והקצאות (1),stock_issue
+מניות והמירים מימוש אופציות(2),stock_options_exercice
+"מניות והמירים סה""כ",stock_and_options_total
+"אג""ח ממשלתי הנפקות (3)",gov_bond_issue
+"אג""ח חברות הנפקות והקצאות(4)",corp_bond_issue
+"אג""ח חברות מימוש אופציות",corp_bond_options_exercice
+"אג""ח חברות למוסדיים (5)",corp_bond_institutions
+"אג""ח חברות סה""כ",corp_bond_total
+מכשירים פיננסים(6),fin_instruments
