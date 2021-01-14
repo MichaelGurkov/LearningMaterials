@@ -6,12 +6,13 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 
-
 ```{r load_libraries}
 
 library(lubridate)
 
 library(tidyverse)
+
+devtools::load_all()
 
 
 ```
@@ -28,6 +29,11 @@ theme_set(theme_bw() + theme(
 
 ```{r import_raw_data, eval=FALSE}
 
+fx_df = read_rds(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\fx_df.rds")) %>% 
+  filter(complete.cases(.))
+
 temp_fx = import_fx_rates()
 
 
@@ -37,10 +43,9 @@ temp_fx = import_fx_rates()
 
 ```{r import_data}
 
-fx_df = read_rds(paste0(
-  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
-  "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\fx_df.rds")) %>% 
-  filter(complete.cases(.))
+fx_df = import_fx_rates() %>% 
+  filter(!is.na(date))
+
 
 fx_balance = read_csv(paste0(
   file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
@@ -48,6 +53,10 @@ fx_balance = read_csv(paste0(
   col_names = c("date","fx_balance")) %>% 
   mutate(date = dmy(date))
 
+fx_purchases = read_csv(paste0(
+  file.path(Sys.getenv("USERPROFILE"), fsep = "\\"),
+  "\\OneDrive - Bank Of Israel\\Data\\BoI\\FX\\Balance\\FX_Purchases.csv")) %>% 
+  mutate(date = dmy(date))
 
 ```
 
@@ -70,8 +79,7 @@ band_df = import_band_data()
 
 fx_df %>% 
   filter(currency == "us_dollar") %>% 
-  filter(year(date) > 1990) %>% 
-  filter(year(date) == 2008) %>% 
+  filter(year(date) > 2000) %>%
   ggplot(aes(x = date, y = value)) + 
   geom_line() + 
   xlab(NULL) + ylab(NULL) + ggtitle("USD-ILS exchange rate") + 
@@ -82,15 +90,36 @@ fx_df %>%
 
 ```
 
+
 ```{r plot_fx_reserves}
 
 fx_balance %>% 
+  filter(year(date) > 2000) %>%
   ggplot(aes(x = date, y = fx_balance)) + 
   geom_line() + 
   scale_y_continuous(labels = scales::comma_format(scale = 1000 ^ (-1))) + 
   xlab(NULL) + ylab(NULL) + ggtitle("FX reserves (billions USD)")
 
 ```
+
+
+```{r plot_fx_reserves_changes}
+
+fx_balance %>% 
+  filter(year(date) > 2000) %>%
+  mutate(fx_balance = c(NA,diff(fx_balance))) %>% 
+  filter(complete.cases(.)) %>% 
+  ggplot(aes(x = date, y = fx_balance,
+             fill = if_else(fx_balance > 0, "up", "down"))) + 
+  geom_col() + 
+  scale_fill_manual(values = c("up" = "darkgreen", "down" = "red")) + 
+  scale_y_continuous(labels = scales::comma_format(scale = 1000 ^ (-1))) + 
+  xlab(NULL) + ylab(NULL) + ggtitle("FX reserves changes (billions USD)") + 
+  theme(legend.position = "none")
+
+
+```
+
 
 ```{r plot_fx_trade_volume_old}
 
@@ -107,6 +136,7 @@ volume_data_list$old_format_data %>%
 
 ```
 
+
 ```{r plot_fx_trade_volume_new}
 
 volume_data_list$daily_df %>% 
@@ -120,14 +150,37 @@ volume_data_list$daily_df %>%
 
 ```
 
+
+```{r plot_fx_purchases}
+
+fx_purchases %>% 
+  pivot_longer(-date, names_to = "type") %>% 
+  filter(!type == "total_buy") %>% 
+  ggplot(aes(x = date, y = value, fill = type)) + 
+  geom_col() + 
+  ylab(NULL) + xlab(NULL) + ggtitle("FX purchases (USD billions)")
+  
+
+
+
+```
+
+
 ```{r plot_band_data}
 
 band_df %>% 
+  left_join(fx_df %>% 
+              filter(currency == "us_dollar") %>% 
+              select(-currency), by = "date") %>% 
+  rename(fx_rate = value) %>% 
   pivot_longer(-date) %>% 
   ggplot(aes(x = date, y = value, color = name)) + 
   geom_line() + 
+  scale_color_manual(values = c("fx_rate" = "black",
+                                "lower_bound" = "cyan4",
+                                "upper_bound" = "cyan4")) + 
   xlab(NULL) + ylab(NULL) + ggtitle("FX band")
-  
+
 
 ```
 

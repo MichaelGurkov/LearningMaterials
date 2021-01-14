@@ -1,0 +1,31 @@
+
+```{r load_libraries}
+
+library(Quandl)
+
+Quandl.api_key("Vd7t2TFEjCvipyX7zPmh")
+
+library(tidyverse)
+
+```
+
+
+```{r load_data}
+
+ca_df = Quandl("ODA/ISR_BCA",type = "raw")
+
+ca_df = ca_df %>% 
+  rename_all(tolower)
+
+```
+
+
+```{r plot_current_account}
+
+ca_df %>% 
+  ggplot(aes(x = date, y = value)) + 
+  geom_line() + 
+  geom_hline(yintercept = 0, linetype = "dashed")
+
+```
+
